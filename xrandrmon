@@ -1,0 +1,19 @@
+#! /bin/sh
+
+DEV=`xrandr --current | sed -n -e 's/^\(\S*\) connected primary.*$/\1/p'`
+path=/sys/class/backlight/intel_backlight
+
+luminance() {
+	read -r level < "$path"/brightness
+	python3 -c "print(${level} / ${max})"
+}
+
+read -r max < "$path"/max_brightness
+
+echo "Will run xrandr with brightness $(luminance)"
+
+xrandr --output ${DEV} --brightness "$(luminance)"
+
+inotifywait -me MODIFY --format '' "$path"/brightness | while read STATE; do
+	xrandr --output ${DEV} --brightness "$(luminance)"
+done
